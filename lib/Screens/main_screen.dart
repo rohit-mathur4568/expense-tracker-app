@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
+import 'home_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -11,9 +12,9 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  // Ye wo screens hain jo tab dabane par khulengi (Abhi dummy hain)
+  // Ye wo screens hain jo tab dabane par khulengi
   final List<Widget> _screens = [
-    const Center(child: Text('Home Screen', style: TextStyle(fontSize: 24))),
+    const HomeScreen(),
     const Center(child: Text('Stats Screen', style: TextStyle(fontSize: 24))),
     const Center(child: Text('Profile Screen', style: TextStyle(fontSize: 24))),
   ];
@@ -22,9 +23,9 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
-      body: _screens[_currentIndex], // Jo tab select hoga, wo screen dikhegi
+      body: _screens[_currentIndex],
 
-      // Ye raha tera bindas Bottom Navigation Bar
+      //  Bottom Navigation Bar
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) {
@@ -53,10 +54,8 @@ class _MainScreenState extends State<MainScreen> {
         ],
       ),
 
-      // Center mein ek bada '+ Add Expense' button (Floating Action Button)
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // Aage chalkar yahan Add Expense ka bottom sheet khulega
           print("Add Expense Clicked!");
         },
         backgroundColor: AppColors.primaryColor,
