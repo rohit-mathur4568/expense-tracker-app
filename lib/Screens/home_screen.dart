@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart'; // Database listen karne ke liye
+import '../models/expense.dart'; // Apna data model
 import '../utils/app_colors.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -7,119 +9,153 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header Section (Welcome Text)
-            const Text(
-              'Welcome Back,',
-              style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
-            ),
-            const Text(
-              'Rohit Bhai! 👋',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-            ),
-            const SizedBox(height: 20),
+      // ValueListenableBuilder Hive database ko continuously dekhta rehta hai
+      child: ValueListenableBuilder(
+        valueListenable: Hive.box<Expense>('expenses_box').listenable(),
+        builder: (context, box, child) {
 
-            // Premium Balance Card
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppColors.primaryColor, Color(0xFF009688)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+          // 1. Saara data database se list mein nikalna
+          List<Expense> expenses = box.values.toList().cast<Expense>();
+
+          // 2. Data ko naye se purane date ke hisaab se sort karna
+          expenses.sort((a, b) => b.date.compareTo(a.date));
+
+          // 3. Balance Calculate Karna (Real-time Math)
+          double totalIncome = 0;
+          double totalExpense = 0;
+
+          for (var exp in expenses) {
+            if (exp.category == 'Income') {
+              totalIncome += exp.amount;
+            } else {
+              totalExpense += exp.amount;
+            }
+          }
+
+          double totalBalance = totalIncome - totalExpense;
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header Section
+                const Text(
+                  'Welcome Back,',
+                  style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
                 ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primaryColor.withOpacity(0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 5),
+                const Text(
+                  'Rohit Bhai! 👋',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                ),
+                const SizedBox(height: 20),
+
+                // Premium Balance Card (Ab ye Live hai)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [AppColors.primaryColor, Color(0xFF009688)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primaryColor.withOpacity(0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Total Balance',
-                    style: TextStyle(color: Colors.white70, fontSize: 16),
-                  ),
-                  SizedBox(height: 10),
-                  Text(
-                    '₹ 24,500.00',
-                    style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Income Tracker
+                      const Text('Total Balance', style: TextStyle(color: Colors.white70, fontSize: 16)),
+                      const SizedBox(height: 10),
+                      Text(
+                        '₹ ${totalBalance.toStringAsFixed(2)}', // Live Balance
+                        style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 20),
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Icon(Icons.arrow_downward, color: Colors.white, size: 20),
-                          SizedBox(width: 8),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          Row(
                             children: [
-                              Text('Income', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                              Text('₹ 30,000', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                              const Icon(Icons.arrow_downward, color: Colors.white, size: 20),
+                              const SizedBox(width: 8),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Income', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                                  Text('₹ ${totalIncome.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                                ],
+                              ),
                             ],
                           ),
-                        ],
-                      ),
-                      // Expense Tracker
-                      Row(
-                        children: [
-                          Icon(Icons.arrow_upward, color: Colors.white, size: 20),
-                          SizedBox(width: 8),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          Row(
                             children: [
-                              Text('Expense', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                              Text('₹ 5,500', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                              const Icon(Icons.arrow_upward, color: Colors.white, size: 20),
+                              const SizedBox(width: 8),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Expense', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                                  Text('₹ ${totalExpense.toStringAsFixed(2)}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                                ],
+                              ),
                             ],
                           ),
                         ],
                       ),
                     ],
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 30),
+                ),
+                const SizedBox(height: 30),
 
-            // Recent Transactions Heading
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
+                // Recent Transactions Heading
                 const Text(
                   'Recent Transactions',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                 ),
-                TextButton(
-                  onPressed: () {},
-                  child: const Text('See All', style: TextStyle(color: AppColors.primaryColor)),
+                const SizedBox(height: 10),
+
+                // Live Transaction List
+                expenses.isEmpty
+                    ? const Center(
+                    child: Padding(
+                      padding: EdgeInsets.only(top: 20),
+                      child: Text("No transactions yet. Add some!", style: TextStyle(color: AppColors.textSecondary)),
+                    )
+                )
+                    : ListView.builder(
+                  shrinkWrap: true, // Scroll view ke andar list view chalane ke liye
+                  physics: const NeverScrollableScrollPhysics(), // Scroll parent karega
+                  itemCount: expenses.length,
+                  itemBuilder: (context, index) {
+                    final expense = expenses[index];
+                    final isExpense = expense.category == 'Expense';
+
+                    return _buildTransactionCard(
+                        expense.title,
+                        expense.category,
+                        '₹ ${expense.amount.toStringAsFixed(2)}',
+                        isExpense,
+                        isExpense ? Icons.money_off : Icons.account_balance_wallet
+                    );
+                  },
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-
-            // Dummy Transaction List
-            _buildTransactionCard('Zomato Lunch', 'Food', '₹ 350', true, Icons.fastfood),
-            _buildTransactionCard('Freelance Project', 'Income', '₹ 15,000', false, Icons.work),
-            _buildTransactionCard('Petrol', 'Transport', '₹ 500', true, Icons.local_gas_station),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 
-  // Transaction Card Widget Helper
+  // Transaction Card Widget (Thoda clean kar diya)
   Widget _buildTransactionCard(String title, String category, String amount, bool isExpense, IconData icon) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -139,7 +175,7 @@ class HomeScreen extends StatelessWidget {
               color: AppColors.backgroundColor,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: AppColors.textSecondary),
+            child: Icon(icon, color: isExpense ? AppColors.expenseColor : AppColors.primaryColor),
           ),
           const SizedBox(width: 15),
           Expanded(

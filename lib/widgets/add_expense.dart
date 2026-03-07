@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart'; // Database
+import '../models/expense.dart'; // Tera banaya hua model
 import '../utils/app_colors.dart';
-import 'package:hive/hive.dart';
-import '../models/expense.dart'; //apna banaya hua data model
 
 class AddExpense extends StatefulWidget {
   const AddExpense({super.key});
@@ -13,8 +13,6 @@ class AddExpense extends StatefulWidget {
 class _AddExpenseState extends State<AddExpense> {
   final _titleController = TextEditingController();
   final _amountController = TextEditingController();
-
-  // Naya Variable: Default 'Expense' set rakha hai
   String _transactionType = 'Expense';
 
   @override
@@ -47,7 +45,7 @@ class _AddExpenseState extends State<AddExpense> {
           ),
           const SizedBox(height: 20),
 
-          // New Feature: Income aur Expense Toggle Buttons
+          // Income and Expense Toggle
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -78,7 +76,6 @@ class _AddExpenseState extends State<AddExpense> {
           ),
           const SizedBox(height: 20),
 
-          // Expense Name Input
           TextField(
             controller: _titleController,
             decoration: InputDecoration(
@@ -94,7 +91,6 @@ class _AddExpenseState extends State<AddExpense> {
           ),
           const SizedBox(height: 15),
 
-          // Amount Input
           TextField(
             controller: _amountController,
             keyboardType: TextInputType.number,
@@ -111,14 +107,37 @@ class _AddExpenseState extends State<AddExpense> {
           ),
           const SizedBox(height: 25),
 
-          // Save Button
+          // ASLI JADU YAHAN HAI (Save Button)
           SizedBox(
             width: double.infinity,
             height: 50,
             child: ElevatedButton(
               onPressed: () {
-                // Abhi sirf test karne ke liye console me print kar rahe hain
-                print("Type: $_transactionType, Title: ${_titleController.text}, Amount: ${_amountController.text}");
+                final enteredTitle = _titleController.text;
+                final enteredAmount = double.tryParse(_amountController.text) ?? 0.0;
+
+                // Validation
+                if (enteredTitle.isEmpty || enteredAmount <= 0) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Bhai, Sahi Title aur Amount daal!')),
+                  );
+                  return;
+                }
+
+                // Database mein save karna
+                final newTransaction = Expense(
+                  id: DateTime.now().toString(),
+                  title: enteredTitle,
+                  amount: enteredAmount,
+                  date: DateTime.now(),
+                  category: _transactionType,
+                );
+
+                final box = Hive.box<Expense>('expenses_box');
+                box.add(newTransaction);
+
+                print("DATA ASLI MEIN SAVE HUA! Total: ${box.length}");
+
                 Navigator.pop(context);
               },
               style: ElevatedButton.styleFrom(
