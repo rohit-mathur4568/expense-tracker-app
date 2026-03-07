@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
 import 'home_screen.dart';
+import '../widgets/add_expense.dart'; // Nayi file ka import
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -12,7 +13,6 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  // Ye wo screens hain jo tab dabane par khulengi
   final List<Widget> _screens = [
     const HomeScreen(),
     const Center(child: Text('Stats Screen', style: TextStyle(fontSize: 24))),
@@ -25,7 +25,6 @@ class _MainScreenState extends State<MainScreen> {
       backgroundColor: AppColors.backgroundColor,
       body: _screens[_currentIndex],
 
-      //  Bottom Navigation Bar
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) {
@@ -39,26 +38,25 @@ class _MainScreenState extends State<MainScreen> {
         elevation: 10,
         type: BottomNavigationBarType.fixed,
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_filled),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart_rounded),
-            label: 'Stats',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.bar_chart_rounded), label: 'Stats'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),
 
+      // Ye raha tera FAB jo form open karega
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          print("Add Expense Clicked!");
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true, // Keyboard aane par form upar jayega
+            backgroundColor: Colors.transparent,
+            builder: (ctx) => const AddExpense(), // Tera naya form call ho raha hai
+          );
         },
         backgroundColor: AppColors.primaryColor,
+        shape: const CircleBorder(),
+        elevation: 5,
         child: const Icon(Icons.add, color: Colors.white, size: 30),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
