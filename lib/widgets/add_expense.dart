@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
+import 'package:hive/hive.dart';
+import '../models/expense.dart'; //apna banaya hua data model
 
 class AddExpense extends StatefulWidget {
   const AddExpense({super.key});
