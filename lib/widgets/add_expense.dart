@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hive/hive.dart'; // Database
 import '../models/expense.dart'; // Tera banaya hua model
 import '../utils/app_colors.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AddExpense extends StatefulWidget {
   const AddExpense({super.key});
@@ -112,7 +113,7 @@ class _AddExpenseState extends State<AddExpense> {
             width: double.infinity,
             height: 50,
             child: ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 final enteredTitle = _titleController.text;
                 final enteredAmount = double.tryParse(_amountController.text) ?? 0.0;
 
@@ -125,20 +126,19 @@ class _AddExpenseState extends State<AddExpense> {
                 }
 
                 // Database mein save karna
-                final newTransaction = Expense(
-                  id: DateTime.now().toString(),
-                  title: enteredTitle,
-                  amount: enteredAmount,
-                  date: DateTime.now(),
-                  category: _transactionType,
-                );
+                try {
+                  await FirebaseFirestore.instance.collection('expenses').add({
+                    'title' : enteredTitle,
+                    'amount' : enteredAmount,
+                    'date' : DateTime.now().toIso8601String(), //convert date into a text
+                    'category' : _transactionType,
+                  });
+                  print("data goes to firebase ! 👍");
 
-                final box = Hive.box<Expense>('expenses_box');
-                box.add(newTransaction);
-
-                print("DATA is  save! Total: ${box.length}");
-
-                Navigator.pop(context);
+                  Navigator.pop(context);
+                } catch (error) {
+                  print("Error in Cloud : $error");
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: _transactionType == 'Expense' ? AppColors.expenseColor : AppColors.incomeColor,

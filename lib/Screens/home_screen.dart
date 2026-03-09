@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart'; // Database listen karne ke liye
-import '../models/expense.dart'; // Apna data model
+import 'package:cloud_firestore/cloud_firestore.dart'; // Cloud Import ☁️
 import '../utils/app_colors.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -9,26 +8,39 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      // ValueListenableBuilder Hive database ko continuously dekhta rehta hai
-      child: ValueListenableBuilder(
-        valueListenable: Hive.box<Expense>('expenses_box').listenable(),
-        builder: (context, box, child) {
+      // THE MAGIC: StreamBuilder to fetch live data from the cloud
+      child: StreamBuilder<QuerySnapshot>(
+        // This stream fetches data sorted by date (Newest first)
+        stream: FirebaseFirestore.instance
+            .collection('expenses')
+            .orderBy('date', descending: true)
+            .snapshots(),
+        builder: (context, snapshot) {
 
-          // 1. Saara data database se list mein nikalna
-          List<Expense> expenses = box.values.toList().cast<Expense>();
+          // 1. If data is still loading from the internet
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator(color: AppColors.primaryColor));
+          }
 
-          // 2. Data ko naye se purane date ke hisaab se sort karna
-          expenses.sort((a, b) => b.date.compareTo(a.date));
+          // 2. If there's an error or no internet connection
+          if (snapshot.hasError) {
+            return const Center(child: Text("Something went wrong with the cloud!", style: TextStyle(color: Colors.red)));
+          }
 
-          // 3. Balance Calculate Karna (Real-time Math)
+          // 3. Extract data and initialize variables
+          final expenses = snapshot.data?.docs ?? [];
           double totalIncome = 0;
           double totalExpense = 0;
 
-          for (var exp in expenses) {
-            if (exp.category == 'Income') {
-              totalIncome += exp.amount;
+          // 4. Calculate Live Balance
+          for (var doc in expenses) {
+            final data = doc.data() as Map<String, dynamic>;
+            final amount = (data['amount'] ?? 0).toDouble(); // Treat as 0 if amount is null
+
+            if (data['category'] == 'Income') {
+              totalIncome += amount;
             } else {
-              totalExpense += exp.amount;
+              totalExpense += amount;
             }
           }
 
@@ -50,7 +62,7 @@ class HomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
 
-                // Premium Balance Card (Ab ye Live hai)
+                // Premium Balance Card (Now live from the Cloud)
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(20),
@@ -122,26 +134,32 @@ class HomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
 
-                // Live Transaction List
+                // Live Transaction List ☁️
                 expenses.isEmpty
                     ? const Center(
                     child: Padding(
                       padding: EdgeInsets.only(top: 20),
-                      child: Text("No transactions yet. Add some!", style: TextStyle(color: AppColors.textSecondary)),
+                      child: Text("No transactions found. Add some!", style: TextStyle(color: AppColors.textSecondary)),
                     )
                 )
                     : ListView.builder(
-                  shrinkWrap: true, // Scroll view ke andar list view chalane ke liye
-                  physics: const NeverScrollableScrollPhysics(), // Scroll parent karega
+                  shrinkWrap: true, // Allows ListView to scroll inside SingleChildScrollView
+                  physics: const NeverScrollableScrollPhysics(), // Disables inner scrolling, parent handles it
                   itemCount: expenses.length,
                   itemBuilder: (context, index) {
-                    final expense = expenses[index];
-                    final isExpense = expense.category == 'Expense';
+
+                    // Extract data from Firestore Document
+                    final data = expenses[index].data() as Map<String, dynamic>;
+
+                    final title = data['title'] ?? 'Unknown';
+                    final category = data['category'] ?? 'Expense';
+                    final amount = (data['amount'] ?? 0).toDouble();
+                    final isExpense = category == 'Expense';
 
                     return _buildTransactionCard(
-                        expense.title,
-                        expense.category,
-                        '₹ ${expense.amount.toStringAsFixed(2)}',
+                        title,
+                        category,
+                        '₹ ${amount.toStringAsFixed(2)}',
                         isExpense,
                         isExpense ? Icons.money_off : Icons.account_balance_wallet
                     );
@@ -155,7 +173,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // Transaction Card Widget (Thoda clean kar diya)
+  // Transaction Card UI Widget
   Widget _buildTransactionCard(String title, String category, String amount, bool isExpense, IconData icon) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
