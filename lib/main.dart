@@ -3,10 +3,16 @@ import 'screens/main_screen.dart';
 import 'utils/app_colors.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'models/expense.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
 void main() async {
 // Getting the engine ready before the app starts
   WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   //stat hive database
   await Hive.initFlutter();

@@ -119,7 +119,7 @@ class _AddExpenseState extends State<AddExpense> {
                 // Validation
                 if (enteredTitle.isEmpty || enteredAmount <= 0) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Bhai, Sahi Title aur Amount daal!')),
+                    const SnackBar(content: Text('Enter correct title and amount!')),
                   );
                   return;
                 }
@@ -136,7 +136,7 @@ class _AddExpenseState extends State<AddExpense> {
                 final box = Hive.box<Expense>('expenses_box');
                 box.add(newTransaction);
 
-                print("DATA ASLI MEIN SAVE HUA! Total: ${box.length}");
+                print("DATA is  save! Total: ${box.length}");
 
                 Navigator.pop(context);
               },
