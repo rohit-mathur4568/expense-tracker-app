@@ -143,28 +143,64 @@ class HomeScreen extends StatelessWidget {
                     )
                 )
                     : ListView.builder(
-                  shrinkWrap: true, // Allows ListView to scroll inside SingleChildScrollView
-                  physics: const NeverScrollableScrollPhysics(), // Disables inner scrolling, parent handles it
-                  itemCount: expenses.length,
-                  itemBuilder: (context, index) {
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: expenses.length,
+                    itemBuilder: (context, index) {
 
-                    // Extract data from Firestore Document
-                    final data = expenses[index].data() as Map<String, dynamic>;
+                      // Extracting data and IDs from the Firestore document
+                      final doc = expenses[index];
+                      final docId = doc.id;   // 🔑 This ID identifies this particular expense in Firebase
+                      final data =  doc.data() as Map<String, dynamic>;
 
-                    final title = data['title'] ?? 'Unknown';
-                    final category = data['category'] ?? 'Expense';
-                    final amount = (data['amount'] ?? 0).toDouble();
-                    final isExpense = category == 'Expense';
+                      final title = data['title'] ?? 'Unknown';
+                      final category = data['category'] ?? 'Expense';
+                      final amount = (data['amount'] ?? 0).toDouble(); // Spelling fixed
+                      final isExpense = category == 'Expense';
 
-                    return _buildTransactionCard(
-                        title,
-                        category,
-                        '₹ ${amount.toStringAsFixed(2)}',
-                        isExpense,
-                        isExpense ? Icons.money_off : Icons.account_balance_wallet
-                    );
-                  },
-                ),
+                      // 🪄 THE FIX: Proper implementation of Dismissible Widget (Swipe to Delete)
+                      return Dismissible(
+                        key: Key(docId),
+                        direction: DismissDirection.endToStart, // Only swipe from right to left
+
+                        // Swipe Background (Red with Trash Icon)
+                        background: Container(
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 20),
+                          margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade400,
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          child: const Icon(Icons.delete_sweep, color: Colors.white, size: 30),
+                        ),
+
+                        // What happens when you fully swipe it
+                        onDismissed: (direction) async {
+                          // 1. Deleting data from Firebase Cloud 🔥
+                          await FirebaseFirestore.instance.collection('expenses').doc(docId).delete();
+
+                          // 2. A small popup (snackbar) at the bottom
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('$title deleted successfully!'),
+                              backgroundColor: Colors.redAccent,
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        },
+
+                        // The actual transaction card UI
+                        child: _buildTransactionCard(
+                            title,
+                            category,
+                            '₹ ${amount.toStringAsFixed(2)}',
+                            isExpense,
+                            isExpense ? Icons.money_off : Icons.account_balance_wallet
+                        ),
+                      );
+                    }
+                )
               ],
             ),
           );
