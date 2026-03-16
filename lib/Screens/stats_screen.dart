@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../utils/app_colors.dart';
+import '../utils/pdf_helper.dart';
 
 class StatsScreen extends StatefulWidget {
   const StatsScreen({super.key});
@@ -26,6 +27,31 @@ class _StatsScreenState extends State<StatsScreen> {
           backgroundColor: AppColors.backgroundColor,
           elevation: 0,
           centerTitle: true,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.picture_as_pdf, color: AppColors.primaryColor),
+              onPressed: () async {
+                // Fetch the latest transactions directly from Firebase
+                final snapshot = await FirebaseFirestore.instance.collection('expenses').get();
+                final expensesList = snapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+
+                double calculatedIncome = 0;
+                double calculatedExpense = 0;
+
+                for (var transaction in expensesList) {
+                  final amount = (transaction['amount'] ?? 0).toDouble();
+                  if (transaction['category'] == 'Income') {
+                    calculatedIncome += amount;
+                  } else {
+                    calculatedExpense += amount;
+                  }
+                }
+
+                // Trigger the PDF generation process
+                await PdfReportGenerator.generateAndPrintReport(expensesList, calculatedIncome, calculatedExpense);
+              },
+            ),
+          ],
           bottom: const TabBar(
             indicatorColor: AppColors.primaryColor,
             labelColor: AppColors.primaryColor,
