@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
 import 'home_screen.dart';
 import '../widgets/add_expense.dart';
-// Importing only the completed profile screen
 import 'profile_screen.dart';
+import 'stats_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -18,7 +18,7 @@ class _MainScreenState extends State<MainScreen> {
   // List of screens integrating only the developed features
   final List<Widget> _screens = [
     const HomeScreen(),
-    const Center(child: Text('Stats Screen (Pending)', style: TextStyle(fontSize: 24))),
+    const StatsScreen(),
     const ProfileScreen(),
     const Center(child: Text('Settings Screen', style: TextStyle(fontSize: 24))),
   ];
