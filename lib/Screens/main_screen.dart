@@ -4,6 +4,7 @@ import 'home_screen.dart';
 import '../widgets/add_expense.dart';
 import 'profile_screen.dart';
 import 'stats_screen.dart';
+import 'settings_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -20,7 +21,7 @@ class _MainScreenState extends State<MainScreen> {
     const HomeScreen(),
     const StatsScreen(),
     const ProfileScreen(),
-    const Center(child: Text('Settings Screen', style: TextStyle(fontSize: 24))),
+    const SettingsScreen(),
   ];
 
   @override
