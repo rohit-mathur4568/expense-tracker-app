@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
 import 'home_screen.dart';
 import '../widgets/add_expense.dart';
+// Importing only the completed profile screen
+import 'profile_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -13,11 +15,11 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  // 🔴 Update: Ab 4 screens hain taaki UI perfectly balance rahe
+  // List of screens integrating only the developed features
   final List<Widget> _screens = [
     const HomeScreen(),
-    const Center(child: Text('Stats Screen', style: TextStyle(fontSize: 24))),
-    const Center(child: Text('Profile Screen', style: TextStyle(fontSize: 24))),
+    const Center(child: Text('Stats Screen (Pending)', style: TextStyle(fontSize: 24))),
+    const ProfileScreen(),
     const Center(child: Text('Settings Screen', style: TextStyle(fontSize: 24))),
   ];
 
@@ -25,25 +27,19 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
-
-      extendBody: true, // Background gaddhe ke pichhe jaye
-
+      extendBody: true,
       body: _screens[_currentIndex],
-
-      // 🛠️ PERFECTLY BALANCED NAV BAR
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),
         notchMargin: 8.0,
         clipBehavior: Clip.antiAlias,
-        color: AppColors.cardColor, // White ya dark mode color
+        color: AppColors.cardColor,
         elevation: 10,
         child: SizedBox(
-          height: 65, // Thodi height badhayi taaki premium feel aaye
+          height: 65,
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween, // Beech mein apne aap space banayega
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-
-              // LEFT SIDE (Home & Stats)
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -51,21 +47,17 @@ class _MainScreenState extends State<MainScreen> {
                   _buildNavItem(Icons.bar_chart_rounded, 'Stats', 1),
                 ],
               ),
-
-              // RIGHT SIDE (Profile & Settings)
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildNavItem(Icons.person, 'Profile', 2),
-                  _buildNavItem(Icons.settings, 'Settings', 3), // Ab ye visible hai!
+                  _buildNavItem(Icons.settings, 'Settings', 3),
                 ],
               ),
-
             ],
           ),
         ),
       ),
-
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           showModalBottomSheet(
@@ -84,11 +76,11 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  // 📝 Nav Item Builder (Slightly adjusted for perfect width)
+  // Builder function for navigation items
   Widget _buildNavItem(IconData icon, String label, int index) {
     bool isSelected = _currentIndex == index;
     return MaterialButton(
-      minWidth: 70, // Har icon ko barabar space milegi
+      minWidth: 70,
       onPressed: () {
         setState(() {
           _currentIndex = index;

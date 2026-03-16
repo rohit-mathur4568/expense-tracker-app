@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // Cloud Import ☁️
+import 'package:cloud_firestore/cloud_firestore.dart'; // Cloud Import
+import 'package:firebase_auth/firebase_auth.dart'; // Authentication Import
 import '../utils/app_colors.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -7,35 +8,41 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Retrieve the active user session from Firebase
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    // Extract the first name from the full display name, or fallback to 'User'
+    final firstName = currentUser?.displayName?.split(' ').first ?? 'User';
+
     return SafeArea(
-      // THE MAGIC: StreamBuilder to fetch live data from the cloud
+      // StreamBuilder to fetch live data from the cloud
       child: StreamBuilder<QuerySnapshot>(
-        // This stream fetches data sorted by date (Newest first)
+        // This stream fetches data sorted by date in descending order
         stream: FirebaseFirestore.instance
             .collection('expenses')
             .orderBy('date', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
 
-          // 1. If data is still loading from the internet
+          // 1. Handle loading state
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator(color: AppColors.primaryColor));
           }
 
-          // 2. If there's an error or no internet connection
+          // 2. Handle error state
           if (snapshot.hasError) {
-            return const Center(child: Text("Something went wrong with the cloud!", style: TextStyle(color: Colors.red)));
+            return const Center(child: Text("Database connection error.", style: TextStyle(color: Colors.red)));
           }
 
-          // 3. Extract data and initialize variables
+          // 3. Extract data and initialize calculation variables
           final expenses = snapshot.data?.docs ?? [];
           double totalIncome = 0;
           double totalExpense = 0;
 
-          // 4. Calculate Live Balance
+          // 4. Calculate live balance iteratively
           for (var doc in expenses) {
             final data = doc.data() as Map<String, dynamic>;
-            final amount = (data['amount'] ?? 0).toDouble(); // Treat as 0 if amount is null
+            final amount = (data['amount'] ?? 0).toDouble();
 
             if (data['category'] == 'Income') {
               totalIncome += amount;
@@ -51,18 +58,18 @@ class HomeScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header Section
+                // Header Section with Dynamic User Name
                 const Text(
                   'Welcome Back,',
                   style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
                 ),
-                const Text(
-                  'Rohit Bhai! 👋',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                Text(
+                  '$firstName!',
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                 ),
                 const SizedBox(height: 20),
 
-                // Premium Balance Card (Now live from the Cloud)
+                // Premium Balance Card
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(20),
@@ -87,7 +94,7 @@ class HomeScreen extends StatelessWidget {
                       const Text('Total Balance', style: TextStyle(color: Colors.white70, fontSize: 16)),
                       const SizedBox(height: 10),
                       Text(
-                        '₹ ${totalBalance.toStringAsFixed(2)}', // Live Balance
+                        '₹ ${totalBalance.toStringAsFixed(2)}',
                         style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 20),
@@ -134,7 +141,7 @@ class HomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
 
-                // Live Transaction List ☁️
+                // Live Transaction List
                 expenses.isEmpty
                     ? const Center(
                     child: Padding(
@@ -148,22 +155,22 @@ class HomeScreen extends StatelessWidget {
                     itemCount: expenses.length,
                     itemBuilder: (context, index) {
 
-                      // Extracting data and IDs from the Firestore document
+                      // Extracting data and unique document ID
                       final doc = expenses[index];
-                      final docId = doc.id;   // 🔑 This ID identifies this particular expense in Firebase
+                      final docId = doc.id;
                       final data =  doc.data() as Map<String, dynamic>;
 
                       final title = data['title'] ?? 'Unknown';
                       final category = data['category'] ?? 'Expense';
-                      final amount = (data['amount'] ?? 0).toDouble(); // Spelling fixed
+                      final amount = (data['amount'] ?? 0).toDouble();
                       final isExpense = category == 'Expense';
 
-                      // 🪄 THE FIX: Proper implementation of Dismissible Widget (Swipe to Delete)
+                      // Swipe to delete implementation
                       return Dismissible(
                         key: Key(docId),
-                        direction: DismissDirection.endToStart, // Only swipe from right to left
+                        direction: DismissDirection.endToStart,
 
-                        // Swipe Background (Red with Trash Icon)
+                        // Swipe Background styling
                         background: Container(
                           alignment: Alignment.centerRight,
                           padding: const EdgeInsets.only(right: 20),
@@ -175,12 +182,13 @@ class HomeScreen extends StatelessWidget {
                           child: const Icon(Icons.delete_sweep, color: Colors.white, size: 30),
                         ),
 
-                        // What happens when you fully swipe it
+                        // Deletion execution logic
                         onDismissed: (direction) async {
-                          // 1. Deleting data from Firebase Cloud 🔥
+                          // 1. Delete data from Firebase Cloud
                           await FirebaseFirestore.instance.collection('expenses').doc(docId).delete();
 
-                          // 2. A small popup (snackbar) at the bottom
+                          // 2. Display success confirmation
+                          if (!context.mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text('$title deleted successfully!'),
@@ -190,7 +198,7 @@ class HomeScreen extends StatelessWidget {
                           );
                         },
 
-                        // The actual transaction card UI
+                        // Transaction card UI component
                         child: _buildTransactionCard(
                             title,
                             category,
@@ -209,7 +217,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // Transaction Card UI Widget
+  // Helper widget to construct individual transaction cards
   Widget _buildTransactionCard(String title, String category, String amount, bool isExpense, IconData icon) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),

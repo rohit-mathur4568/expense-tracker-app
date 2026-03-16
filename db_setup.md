@@ -55,3 +55,77 @@ flutter pub get
 The auto-generated file lib/firebase_options.dart contains sensitive API keys.
 DO NOT push this file to GitHub.
 It is already added to the .gitignore file. Anyone cloning this repo must generate their own firebase_options.dart file by following Step 4.
+
+Gemini said
+Here is the rest of the documentation for your db_setup.md file. It includes the initialization code, the exact database structure required for your project, and the security rules.
+
+Just copy and paste this directly below your Step 5:
+
+Step 6: Initialize Firebase in the Application
+Before performing any database operations, Firebase must be initialized at the root of your Flutter application. Update your lib/main.dart file to include the initialization logic.
+
+Dart
+import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart'; // Auto-generated in Step 4
+
+void main() async {
+  // Ensure the Flutter framework is bound to the engine before async operations
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase using the platform-specific configurations
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  runApp(const ExpenseTrackerApp());
+}
+Step 7: Database Structure (Conceptual Model)
+This application utilizes Firebase Firestore, a NoSQL document database. All financial transactions are stored within a primary collection.
+
+Collection Name: expenses
+
+Document Fields & Data Types:
+
+id (String): A unique, auto-generated identifier for the transaction.
+
+title (String): A brief description of the transaction (e.g., "Zomato Lunch", "Monthly Salary").
+
+amount (Double/Number): The numerical value of the transaction.
+
+category (String): The classification of the transaction (e.g., "Income" or "Expense").
+
+date (Timestamp): The exact date and time the transaction was recorded, used for chronological sorting.
+
+Step 8: Firestore Security Rules
+If you selected "Test Mode" during Step 1, your database allows open read/write access for 30 days. To secure your database and ensure only authenticated users (logged in via Google) can access or modify the expense data, update your Firestore rules.
+
+Go to the Firebase Console.
+
+Navigate to Firestore Database > Rules tab.
+
+Replace the existing rules with the following production-ready rules:
+
+JavaScript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Target the 'expenses' collection
+    match /expenses/{document=**} {
+      // Allow read and write operations ONLY if the user is authenticated
+      allow read, write: if request.auth != null;
+    }
+  }
+}
+Click Publish.
+
+Step 9: Verifying the Connection
+To verify that your app is successfully connected to Firestore:
+
+Run the application on an emulator or physical device (flutter run).
+
+Log in using the Google Sign-In button.
+
+Add a new expense using the Add Transaction form.
+
+Open the Firebase Console, go to Firestore Database, and verify that a new document has been created in the expenses collection.
