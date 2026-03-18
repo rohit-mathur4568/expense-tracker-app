@@ -31,7 +31,7 @@ class _AddExpenseState extends State<AddExpense> {
         bottom: MediaQuery.of(context).viewInsets.bottom + 20,
       ),
       decoration: const BoxDecoration(
-        color: AppColors.cardColor,
+
         borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
       ),
       child: Column(

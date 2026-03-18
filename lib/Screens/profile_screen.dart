@@ -29,10 +29,10 @@ class ProfileScreen extends StatelessWidget {
     final email = user?.email ?? 'No email linked';
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundColor,
+
       appBar: AppBar(
         title: const Text('My Profile', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: AppColors.backgroundColor,
+
         elevation: 0,
         centerTitle: true,
       ),
@@ -76,7 +76,7 @@ class ProfileScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Container(
                 decoration: BoxDecoration(
-                  color: AppColors.cardColor,
+
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(

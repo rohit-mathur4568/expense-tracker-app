@@ -21,10 +21,10 @@ class _StatsScreenState extends State<StatsScreen> {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor: AppColors.backgroundColor,
+
         appBar: AppBar(
           title: const Text('Analytics Dashboard', style: TextStyle(fontWeight: FontWeight.bold)),
-          backgroundColor: AppColors.backgroundColor,
+
           elevation: 0,
           centerTitle: true,
           actions: [
@@ -202,7 +202,7 @@ class _StatsScreenState extends State<StatsScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
       decoration: BoxDecoration(
-        color: AppColors.cardColor,
+
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
@@ -264,7 +264,7 @@ class _StatsScreenState extends State<StatsScreen> {
     return Container(
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-        color: AppColors.cardColor,
+
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2)),

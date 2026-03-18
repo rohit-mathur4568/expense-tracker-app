@@ -27,14 +27,14 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.backgroundColor,
+
       extendBody: true,
       body: _screens[_currentIndex],
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),
         notchMargin: 8.0,
         clipBehavior: Clip.antiAlias,
-        color: AppColors.cardColor,
+
         elevation: 10,
         child: SizedBox(
           height: 65,

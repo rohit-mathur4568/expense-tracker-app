@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../utils/app_colors.dart';
 import '../utils/pdf_helper.dart';
+import '../main.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -12,16 +14,16 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   // Local state variables to make the UI switches interactive
-  bool _isDarkMode = false;
+  bool _isDarkMode = Hive.box('settings_box').get('isDarkMode', defaultValue: false);
   bool _isReminderOn = true;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.backgroundColor,
+
       appBar: AppBar(
         title: const Text('Settings', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: AppColors.backgroundColor,
+
         elevation: 0,
         centerTitle: true,
       ),
@@ -36,20 +38,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryColor),
             ),
             const SizedBox(height: 10),
-            _buildSwitchTile(
-              title: 'Dark Mode',
-              subtitle: 'Experimental feature',
-              icon: Icons.dark_mode,
-              value: _isDarkMode,
-              onChanged: (val) {
-                setState(() {
-                  _isDarkMode = val;
-                });
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Dark mode requires an app restart to apply globally.')),
-                );
-              },
-            ),
+    _buildSwitchTile(
+    title: 'Dark Mode',
+    subtitle: 'Switch application theme',
+    icon: Icons.dark_mode,
+    value: _isDarkMode,
+    onChanged: (val) {
+    setState(() {
+    _isDarkMode = val;
+    });
+    //  This changes the global theme instantly
+    themeNotifier.value = val ? ThemeMode.dark : ThemeMode.light;
+    Hive.box('settings_box').put('isDarkMode', val);
+    },
+    ),
             _buildSwitchTile(
               title: 'Daily Reminders',
               subtitle: 'Notification at 9:00 PM',
@@ -90,7 +92,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: AppColors.cardColor,
+
                 borderRadius: BorderRadius.circular(15),
                 boxShadow: [
                   BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),

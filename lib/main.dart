@@ -1,33 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Required for checking login state
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import 'firebase_options.dart';
 import 'models/expense.dart';
 import 'utils/app_colors.dart';
 
-// Fixed the capital 'S' issue to match your folder structure perfectly
 import 'Screens/main_screen.dart';
 import 'Screens/login_screen.dart';
 
+// GLOBAL THEME NOTIFIER: Controls the app theme from anywhere in the app
+final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
+
 void main() async {
-  // 1. Getting the Flutter engine ready before the app starts
+  // Getting the Flutter engine ready before the app starts
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 2. Initialize Firebase for backend and authentication
+  // Initialize Firebase for backend and authentication
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // 3. Initialize Hive local database for offline storage
+  // Initialize Hive local database for offline storage
   await Hive.initFlutter();
 
-  // 4. Register the custom Expense model to the Hive database
+  // Register the custom Expense model to the Hive database
   Hive.registerAdapter(ExpenseAdapter());
 
-  // 5. Open a 'box' (local table) named 'expenses_box' to store all data
+  // Open a box named 'expenses_box' to store all data locally
   await Hive.openBox<Expense>('expenses_box');
+
+  // 🔥 NEW: Open Settings Box & Load Saved Theme
+  await Hive.openBox('settings_box');
+  bool isDark = Hive.box('settings_box').get('isDarkMode', defaultValue: false);
+  themeNotifier.value = isDark ? ThemeMode.dark : ThemeMode.light;
 
   runApp(const ExpenseTrackerApp());
 }
@@ -37,26 +44,58 @@ class ExpenseTrackerApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false, // Hides the red debug banner
-      title: 'Expense Tracker',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primaryColor),
-        useMaterial3: true,
-      ),
+    // ValueListenableBuilder listens to themeNotifier and rebuilds when it changes
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: themeNotifier,
+      builder: (_, ThemeMode currentMode, __) {
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'Expense Tracker',
 
-      // 🚀 The Magic Router: Decides which screen to show based on login status
-      home: StreamBuilder<User?>(
-        stream: FirebaseAuth.instance.authStateChanges(),
-        builder: (context, snapshot) {
-          // If the snapshot has data, it means the user is successfully logged in
-          if (snapshot.hasData) {
-            return const MainScreen(); // Take them directly to the app
-          }
-          // If no data is found, the user is logged out. Show the Login Screen.
-          return const LoginScreen();
-        },
-      ),
+          // Connect the mode to our global notifier
+          themeMode: currentMode,
+
+          // Define Light Theme properties
+          theme: ThemeData.light().copyWith(
+            colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primaryColor),
+            scaffoldBackgroundColor: const Color(0xFFF8F9FA),
+            cardColor: Colors.white,
+            appBarTheme: const AppBarTheme(
+              backgroundColor: Color(0xFFF8F9FA),
+              foregroundColor: Colors.black,
+              elevation: 0,
+            ),
+            useMaterial3: true,
+          ),
+
+          // Define Dark Theme properties
+          darkTheme: ThemeData.dark().copyWith(
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: AppColors.primaryColor,
+              brightness: Brightness.dark,
+            ),
+            scaffoldBackgroundColor: const Color(0xFF121212),
+            cardColor: const Color(0xFF1E1E1E),
+            appBarTheme: const AppBarTheme(
+              backgroundColor: Color(0xFF121212),
+              foregroundColor: Colors.white,
+              elevation: 0,
+            ),
+            bottomAppBarTheme: const BottomAppBarThemeData(color: Color(0xFF1E1E1E)),            useMaterial3: true,
+          ),
+
+          // The Magic Router: Decides which screen to show based on login status
+          home: StreamBuilder<User?>(
+            stream: FirebaseAuth.instance.authStateChanges(),
+            builder: (context, snapshot) {
+              if (snapshot.hasData) {
+                return const MainScreen();
+              }
+              return const LoginScreen();
+            },
+          ),
+        );
+      },
     );
   }
 }
