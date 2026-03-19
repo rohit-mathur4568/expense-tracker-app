@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // Cloud Import
-import 'package:firebase_auth/firebase_auth.dart'; // Authentication Import
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../utils/app_colors.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -53,7 +53,7 @@ class HomeScreen extends StatelessWidget {
 
           double totalBalance = totalIncome - totalExpense;
 
-          return SingleChildScrollView(
+          return Padding(
             padding: const EdgeInsets.all(20.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -61,15 +61,15 @@ class HomeScreen extends StatelessWidget {
                 // Header Section with Dynamic User Name
                 const Text(
                   'Welcome Back,',
-                  style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
+                  style: TextStyle(fontSize: 16, color: Colors.grey), // Generic grey works in both modes
                 ),
                 Text(
                   '$firstName!',
-                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold), // Color removed for Auto-Dark mode
                 ),
                 const SizedBox(height: 20),
 
-                // Premium Balance Card
+                // Premium Balance Card (This will stay fixed now)
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(20),
@@ -137,77 +137,67 @@ class HomeScreen extends StatelessWidget {
                 // Recent Transactions Heading
                 const Text(
                   'Recent Transactions',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold), // Auto-adapts to Dark/Light
                 ),
                 const SizedBox(height: 10),
 
-                // Live Transaction List
-                expenses.isEmpty
-                    ? const Center(
-                    child: Padding(
-                      padding: EdgeInsets.only(top: 20),
-                      child: Text("No transactions found. Add some!", style: TextStyle(color: AppColors.textSecondary)),
-                    )
-                )
-                    : ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: expenses.length,
-                    itemBuilder: (context, index) {
+                Expanded(
+                  child: expenses.isEmpty
+                      ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.only(top: 20),
+                        child: Text("No transactions found. Add some!", style: TextStyle(color: Colors.grey)),
+                      )
+                  )
+                      : ListView.builder(
+                      itemCount: expenses.length,
+                      itemBuilder: (context, index) {
 
-                      // Extracting data and unique document ID
-                      final doc = expenses[index];
-                      final docId = doc.id;
-                      final data =  doc.data() as Map<String, dynamic>;
+                        final doc = expenses[index];
+                        final docId = doc.id;
+                        final data =  doc.data() as Map<String, dynamic>;
 
-                      final title = data['title'] ?? 'Unknown';
-                      final category = data['category'] ?? 'Expense';
-                      final amount = (data['amount'] ?? 0).toDouble();
-                      final isExpense = category == 'Expense';
+                        final title = data['title'] ?? 'Unknown';
+                        final category = data['category'] ?? 'Expense';
+                        final amount = (data['amount'] ?? 0).toDouble();
+                        final isExpense = category == 'Expense';
 
-                      // Swipe to delete implementation
-                      return Dismissible(
-                        key: Key(docId),
-                        direction: DismissDirection.endToStart,
-
-                        // Swipe Background styling
-                        background: Container(
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.only(right: 20),
-                          margin: const EdgeInsets.only(bottom: 12),
-                          decoration: BoxDecoration(
-                            color: Colors.red.shade400,
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                          child: const Icon(Icons.delete_sweep, color: Colors.white, size: 30),
-                        ),
-
-                        // Deletion execution logic
-                        onDismissed: (direction) async {
-                          // 1. Delete data from Firebase Cloud
-                          await FirebaseFirestore.instance.collection('expenses').doc(docId).delete();
-
-                          // 2. Display success confirmation
-                          if (!context.mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('$title deleted successfully!'),
-                              backgroundColor: Colors.redAccent,
-                              duration: const Duration(seconds: 2),
+                        return Dismissible(
+                          key: Key(docId),
+                          direction: DismissDirection.endToStart,
+                          background: Container(
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.only(right: 20),
+                            margin: const EdgeInsets.only(bottom: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade400,
+                              borderRadius: BorderRadius.circular(15),
                             ),
-                          );
-                        },
-
-                        // Transaction card UI component
-                        child: _buildTransactionCard(
-                            title,
-                            category,
-                            '₹ ${amount.toStringAsFixed(2)}',
-                            isExpense,
-                            isExpense ? Icons.money_off : Icons.account_balance_wallet
-                        ),
-                      );
-                    }
+                            child: const Icon(Icons.delete_sweep, color: Colors.white, size: 30),
+                          ),
+                          onDismissed: (direction) async {
+                            await FirebaseFirestore.instance.collection('expenses').doc(docId).delete();
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('$title deleted successfully!'),
+                                backgroundColor: Colors.redAccent,
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          },
+                          // Passed context here to get the correct theme colors
+                          child: _buildTransactionCard(
+                              context,
+                              title,
+                              category,
+                              '₹ ${amount.toStringAsFixed(2)}',
+                              isExpense,
+                              isExpense ? Icons.money_off : Icons.account_balance_wallet
+                          ),
+                        );
+                      }
+                  ),
                 )
               ],
             ),
@@ -217,13 +207,14 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // Helper widget to construct individual transaction cards
-  Widget _buildTransactionCard(String title, String category, String amount, bool isExpense, IconData icon) {
+  // Helper widget updated with BuildContext to catch theme dynamically
+  Widget _buildTransactionCard(BuildContext context, String title, String category, String amount, bool isExpense, IconData icon) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-
+        // 🔥 CHANGE 3: Theme.of(context).cardColor lagaya taaki Dark Mode me card dikhe
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 2)),
@@ -234,7 +225,8 @@ class HomeScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.backgroundColor,
+              // Background adapts dynamically now
+              color: Theme.of(context).scaffoldBackgroundColor,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: isExpense ? AppColors.expenseColor : AppColors.primaryColor),
@@ -246,7 +238,7 @@ class HomeScreen extends StatelessWidget {
               children: [
                 Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 const SizedBox(height: 5),
-                Text(category, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                Text(category, style: const TextStyle(color: Colors.grey, fontSize: 12)),
               ],
             ),
           ),
