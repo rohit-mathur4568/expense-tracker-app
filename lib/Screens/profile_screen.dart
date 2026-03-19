@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'login_screen.dart';
 import '../utils/app_colors.dart';
+import 'settings_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -88,7 +89,12 @@ class ProfileScreen extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    _buildMenuOption(Icons.settings, 'Settings', () {}),
+                    _buildMenuOption(Icons.settings, 'Settings', () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                      );
+                    }),
                     const Divider(height: 1, thickness: 1),
                     _buildMenuOption(Icons.security, 'Privacy & Security', () {}),
                     const Divider(height: 1, thickness: 1),
