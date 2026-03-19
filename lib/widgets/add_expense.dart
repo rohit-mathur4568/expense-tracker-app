@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart'; // Database
-import '../models/expense.dart'; // Tera banaya hua model
+import '../models/expense.dart';
 import '../utils/app_colors.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -30,9 +30,9 @@ class _AddExpenseState extends State<AddExpense> {
         top: 20, left: 20, right: 20,
         bottom: MediaQuery.of(context).viewInsets.bottom + 20,
       ),
-      decoration: const BoxDecoration(
-
-        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -41,7 +41,7 @@ class _AddExpenseState extends State<AddExpense> {
           const Center(
             child: Text(
               'Add Transaction',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
           ),
           const SizedBox(height: 20),
@@ -55,7 +55,7 @@ class _AddExpenseState extends State<AddExpense> {
                 selected: _transactionType == 'Expense',
                 selectedColor: AppColors.expenseColor.withOpacity(0.2),
                 labelStyle: TextStyle(
-                  color: _transactionType == 'Expense' ? AppColors.expenseColor : AppColors.textSecondary,
+                  color: _transactionType == 'Expense' ? AppColors.expenseColor : Colors.grey,
                 ),
                 onSelected: (bool selected) {
                   setState(() { _transactionType = 'Expense'; });
@@ -67,7 +67,7 @@ class _AddExpenseState extends State<AddExpense> {
                 selected: _transactionType == 'Income',
                 selectedColor: AppColors.incomeColor.withOpacity(0.2),
                 labelStyle: TextStyle(
-                  color: _transactionType == 'Income' ? AppColors.incomeColor : AppColors.textSecondary,
+                  color: _transactionType == 'Income' ? AppColors.incomeColor : Colors.grey,
                 ),
                 onSelected: (bool selected) {
                   setState(() { _transactionType = 'Income'; });
@@ -79,9 +79,13 @@ class _AddExpenseState extends State<AddExpense> {
 
           TextField(
             controller: _titleController,
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
             decoration: InputDecoration(
               labelText: 'Title',
+              labelStyle: const TextStyle(color: Colors.grey),
               hintText: 'e.g., Zomato, Salary',
+
+              hintStyle: const TextStyle(color: Colors.grey),
               prefixIcon: const Icon(Icons.title, color: AppColors.primaryColor),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
               focusedBorder: OutlineInputBorder(
@@ -95,9 +99,12 @@ class _AddExpenseState extends State<AddExpense> {
           TextField(
             controller: _amountController,
             keyboardType: TextInputType.number,
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
             decoration: InputDecoration(
               labelText: 'Amount (₹)',
+              labelStyle: const TextStyle(color: Colors.grey),
               hintText: '0.00',
+              hintStyle: const TextStyle(color: Colors.grey),
               prefixIcon: const Icon(Icons.currency_rupee, color: AppColors.primaryColor),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
               focusedBorder: OutlineInputBorder(
@@ -108,7 +115,6 @@ class _AddExpenseState extends State<AddExpense> {
           ),
           const SizedBox(height: 25),
 
-          // ASLI JADU YAHAN HAI (Save Button)
           SizedBox(
             width: double.infinity,
             height: 50,
@@ -125,12 +131,12 @@ class _AddExpenseState extends State<AddExpense> {
                   return;
                 }
 
-                // Database mein save karna
+                // save in database
                 try {
                   await FirebaseFirestore.instance.collection('expenses').add({
                     'title' : enteredTitle,
                     'amount' : enteredAmount,
-                    'date' : DateTime.now().toIso8601String(), //convert date into a text
+                    'date' : DateTime.now().toIso8601String(),
                     'category' : _transactionType,
                   });
                   print("data goes to firebase ! 👍");
