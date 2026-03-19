@@ -129,3 +129,19 @@ Log in using the Google Sign-In button.
 Add a new expense using the Add Transaction form.
 
 Open the Firebase Console, go to Firestore Database, and verify that a new document has been created in the expenses collection.
+
+## 🛠️ Firebase Database Setup & Indexing
+
+This application uses Firebase Authentication and Cloud Firestore. To ensure data security, users can only see their own expenses. 
+
+Because we are filtering data by `userId` and sorting it by `date` simultaneously, Firebase requires a **Composite Index**.
+
+### How to set up the Index:
+1. Connect your app to your Firebase project.
+2. Run the application and log in with an account.
+3. Open your IDE's **Debug Console / Terminal**.
+4. You will see a Firestore error containing a direct URL (e.g., `https://console.firebase.google.com/v1/r/project/...`).
+5. **Ctrl + Click** (or copy-paste) that link into your browser.
+6. A Firebase popup will appear. Click the blue **Save / Create Index** button.
+7. Wait 2-3 minutes for the index status to change from "Building..." to **"Enabled"**.
+8. Restart the application. Your database is now fully configured and secure!
