@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../utils/app_colors.dart';
+import '../widgets/add_expense.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -62,15 +63,15 @@ class HomeScreen extends StatelessWidget {
                 // Header Section with Dynamic User Name
                 const Text(
                   'Welcome Back,',
-                  style: TextStyle(fontSize: 16, color: Colors.grey), // Generic grey works in both modes
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
                 ),
                 Text(
                   '$firstName!',
-                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold), // Color removed for Auto-Dark mode
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 20),
 
-                // Premium Balance Card (This will stay fixed now)
+                // Premium Balance Card
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(20),
@@ -138,7 +139,7 @@ class HomeScreen extends StatelessWidget {
                 // Recent Transactions Heading
                 const Text(
                   'Recent Transactions',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold), // Auto-adapts to Dark/Light
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 10),
 
@@ -187,14 +188,26 @@ class HomeScreen extends StatelessWidget {
                               ),
                             );
                           },
-                          // Passed context here to get the correct theme colors
+
                           child: _buildTransactionCard(
                               context,
                               title,
                               category,
                               '₹ ${amount.toStringAsFixed(2)}',
                               isExpense,
-                              isExpense ? Icons.money_off : Icons.account_balance_wallet
+                              isExpense ? Icons.money_off : Icons.account_balance_wallet, () {
+                                showModalBottomSheet(
+                                  context: context,
+                                  isScrollControlled: true,
+                                  backgroundColor: Colors.transparent,
+                                  builder: (context) => AddExpense(
+                                    docId: docId,
+                                    currentTitle: title,
+                                    currentAmount: amount,
+                                    currentCategory: category,
+                                  ),
+                                );
+                              }
                           ),
                         );
                       }
@@ -208,13 +221,11 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // Helper widget updated with BuildContext to catch theme dynamically
-  Widget _buildTransactionCard(BuildContext context, String title, String category, String amount, bool isExpense, IconData icon) {
+  Widget _buildTransactionCard(BuildContext context, String title, String category, String amount, bool isExpense, IconData icon, VoidCallback onEditTap) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(15),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        // 🔥 CHANGE 3: Theme.of(context).cardColor lagaya taaki Dark Mode me card dikhe
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
@@ -226,7 +237,6 @@ class HomeScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              // Background adapts dynamically now
               color: Theme.of(context).scaffoldBackgroundColor,
               borderRadius: BorderRadius.circular(10),
             ),
@@ -250,6 +260,11 @@ class HomeScreen extends StatelessWidget {
               fontSize: 16,
               color: isExpense ? AppColors.expenseColor : AppColors.incomeColor,
             ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.edit_note, color: Colors.grey, size: 28),
+            onPressed: onEditTap,
+            tooltip: 'Edit Transaction',
           ),
         ],
       ),

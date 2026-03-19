@@ -6,7 +6,19 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class AddExpense extends StatefulWidget {
-  const AddExpense({super.key});
+  // Optional parameters added for Editing
+  final String? docId;
+  final String? currentTitle;
+  final double? currentAmount;
+  final String? currentCategory;
+
+  const AddExpense({
+    super.key,
+    this.docId,
+    this.currentTitle,
+    this.currentAmount,
+    this.currentCategory
+  });
 
   @override
   State<AddExpense> createState() => _AddExpenseState();
@@ -18,6 +30,17 @@ class _AddExpenseState extends State<AddExpense> {
   String _transactionType = 'Expense';
 
   @override
+  void initState() {
+    super.initState();
+    // Pre-fill the text fields if we are editing an existing transaction
+    if (widget.docId != null) {
+      _titleController.text = widget.currentTitle ?? '';
+      _amountController.text = widget.currentAmount?.toString() ?? '';
+      _transactionType = widget.currentCategory ?? 'Expense';
+    }
+  }
+
+  @override
   void dispose() {
     _titleController.dispose();
     _amountController.dispose();
@@ -26,6 +49,9 @@ class _AddExpenseState extends State<AddExpense> {
 
   @override
   Widget build(BuildContext context) {
+    // Variable to easily check if we are in Edit Mode or Add Mode
+    final isEditing = widget.docId != null;
+
     return Container(
       padding: EdgeInsets.only(
         top: 20, left: 20, right: 20,
@@ -39,10 +65,10 @@ class _AddExpenseState extends State<AddExpense> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Center(
+          Center(
             child: Text(
-              'Add Transaction',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              isEditing ? 'Edit Transaction' : 'Add Transaction', // Dynamic Title
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
           ),
           const SizedBox(height: 20),
@@ -85,7 +111,6 @@ class _AddExpenseState extends State<AddExpense> {
               labelText: 'Title',
               labelStyle: const TextStyle(color: Colors.grey),
               hintText: 'e.g., Zomato, Salary',
-
               hintStyle: const TextStyle(color: Colors.grey),
               prefixIcon: const Icon(Icons.title, color: AppColors.primaryColor),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
@@ -132,19 +157,32 @@ class _AddExpenseState extends State<AddExpense> {
                   return;
                 }
 
-                // save in database
+                // Save or Update in database
                 try {
                   final user = FirebaseAuth.instance.currentUser;
-                  await FirebaseFirestore.instance.collection('expenses').add({
-                    'title' : enteredTitle,
-                    'amount' : enteredAmount,
-                    'date' : DateTime.now().toIso8601String(),
-                    'category' : _transactionType,
-                    'userId' : user?.uid,
-                  });
-                  print("data goes to firebase ! 👍");
 
-                  Navigator.pop(context);
+                  if (isEditing) {
+                    // Update existing document
+                    await FirebaseFirestore.instance.collection('expenses').doc(widget.docId).update({
+                      'title': enteredTitle,
+                      'amount': enteredAmount,
+                      'category': _transactionType,
+                      // Note: We don't update the date so it stays in its original chronological order
+                    });
+                    print("Data updated in Firebase ! 👍");
+                  } else {
+                    // Add new document
+                    await FirebaseFirestore.instance.collection('expenses').add({
+                      'title' : enteredTitle,
+                      'amount' : enteredAmount,
+                      'date' : DateTime.now().toIso8601String(),
+                      'category' : _transactionType,
+                      'userId' : user?.uid,
+                    });
+                    print("Data added to Firebase ! 👍");
+                  }
+
+                  if (context.mounted) Navigator.pop(context);
                 } catch (error) {
                   print("Error in Cloud : $error");
                 }
@@ -153,9 +191,9 @@ class _AddExpenseState extends State<AddExpense> {
                 backgroundColor: _transactionType == 'Expense' ? AppColors.expenseColor : AppColors.incomeColor,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
               ),
-              child: const Text(
-                'Save',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+              child: Text(
+                isEditing ? 'Update Transaction' : 'Save', // Dynamic Button Text
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
               ),
             ),
           ),
