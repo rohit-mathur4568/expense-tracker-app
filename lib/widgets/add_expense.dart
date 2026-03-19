@@ -3,6 +3,7 @@ import 'package:hive/hive.dart'; // Database
 import '../models/expense.dart';
 import '../utils/app_colors.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class AddExpense extends StatefulWidget {
   const AddExpense({super.key});
@@ -133,11 +134,13 @@ class _AddExpenseState extends State<AddExpense> {
 
                 // save in database
                 try {
+                  final user = FirebaseAuth.instance.currentUser;
                   await FirebaseFirestore.instance.collection('expenses').add({
                     'title' : enteredTitle,
                     'amount' : enteredAmount,
                     'date' : DateTime.now().toIso8601String(),
                     'category' : _transactionType,
+                    'userId' : user?.uid,
                   });
                   print("data goes to firebase ! 👍");
 

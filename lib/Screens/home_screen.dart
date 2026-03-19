@@ -20,6 +20,7 @@ class HomeScreen extends StatelessWidget {
         // This stream fetches data sorted by date in descending order
         stream: FirebaseFirestore.instance
             .collection('expenses')
+            .where('userId', isEqualTo: currentUser?.uid)
             .orderBy('date', descending: true)
             .snapshots(),
         builder: (context, snapshot) {

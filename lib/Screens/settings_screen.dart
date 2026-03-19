@@ -4,6 +4,7 @@ import '../utils/app_colors.dart';
 import '../utils/pdf_helper.dart';
 import '../main.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -161,8 +162,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // Function to aggregate data and trigger the PDF generation utility
   Future<void> _generatePdfReport() async {
     try {
-      final snapshot = await FirebaseFirestore.instance.collection('expenses').get();
-      final expensesList = snapshot.docs.map((doc) => doc.data()).toList();
+      final user = FirebaseAuth.instance.currentUser;
+      final snapshot = await FirebaseFirestore.instance
+          .collection('expenses')
+          .where('userId', isEqualTo: user?.uid)
+          .orderBy('date', descending: true)
+          .get();      final expensesList = snapshot.docs.map((doc) => doc.data()).toList();
 
       double calculatedIncome = 0;
       double calculatedExpense = 0;
