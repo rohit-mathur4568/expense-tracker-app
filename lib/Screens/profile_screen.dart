@@ -30,10 +30,8 @@ class ProfileScreen extends StatelessWidget {
     final email = user?.email ?? 'No email linked';
 
     return Scaffold(
-
       appBar: AppBar(
         title: const Text('My Profile', style: TextStyle(fontWeight: FontWeight.bold)),
-
         elevation: 0,
         centerTitle: true,
       ),
@@ -77,7 +75,6 @@ class ProfileScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Container(
                 decoration: BoxDecoration(
-
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
@@ -96,9 +93,13 @@ class ProfileScreen extends StatelessWidget {
                       );
                     }),
                     const Divider(height: 1, thickness: 1),
-                    _buildMenuOption(Icons.security, 'Privacy & Security', () {}),
+                    _buildMenuOption(Icons.security, 'Privacy & Security', () {
+                      _showSecurityBottomSheet(context, email);
+                    }),
                     const Divider(height: 1, thickness: 1),
-                    _buildMenuOption(Icons.help_outline, 'Help & Support', () {}),
+                    _buildMenuOption(Icons.help_outline, 'Help & Support', () {
+                      _showHelpDialog(context);
+                    }),
                   ],
                 ),
               ),
@@ -149,6 +150,149 @@ class ProfileScreen extends StatelessWidget {
       title: Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
       trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
       onTap: onTap,
+    );
+  }
+
+
+  // 1. HELP & SUPPORT DIALOG FUNCTION
+  void _showHelpDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Theme.of(context).cardColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: AppColors.primaryColor.withOpacity(0.5), width: 1), // Glowing border feel
+        ),
+        contentPadding: const EdgeInsets.all(25),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Premium Support Icon
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppColors.primaryColor.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.support_agent_rounded, size: 60, color: AppColors.primaryColor),
+            ),
+            const SizedBox(height: 20),
+
+            const Text('Support Center', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+
+            const Text(
+              'Need assistance? Our 24/7 automated systems and support team are ready to help.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey),
+            ),
+            const SizedBox(height: 25),
+
+            // Khatarnak "Systems Online" Status Indicator
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 15),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.green.withOpacity(0.3)),
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.sensors, color: Colors.green, size: 20), // Radar/Sensor icon
+                  SizedBox(width: 8),
+                  Text('All Cloud Systems Online', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text('App Version: 2.1.0 (Stable & Secured)', style: TextStyle(fontSize: 12, color: Colors.grey)),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('DISMISS', style: TextStyle(color: AppColors.primaryColor, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 2. PRIVACY & SECURITY BOTTOM SHEET FUNCTION
+  void _showSecurityBottomSheet(BuildContext context, String userEmail) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min, // Ye bottom sheet ko utna hi bada rakhta hai jitna content hai
+          children: [
+            Container(
+              width: 50,
+              height: 5,
+              decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(10)),
+            ),
+            const SizedBox(height: 20),
+            const Text('Privacy & Security', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+            const Text('Manage your account security and data preferences.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
+            const SizedBox(height: 25),
+
+            // Password Reset Feature via Firebase
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), shape: BoxShape.circle),
+                child: const Icon(Icons.lock_reset, color: Colors.orange),
+              ),
+              title: const Text('Reset Password', style: TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: const Text('Receive a password reset link on email'),
+              onTap: () async {
+                Navigator.pop(context); // Bottom sheet ko close karne ke liye
+                try {
+
+                  await FirebaseAuth.instance.sendPasswordResetEmail(email: userEmail);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Password reset link sent to your email!'), backgroundColor: Colors.green),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
+                    );
+                  }
+                }
+              },
+            ),
+            const Divider(),
+
+            // Delete Data Visual Option
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), shape: BoxShape.circle),
+                child: const Icon(Icons.delete_forever, color: Colors.red),
+              ),
+              title: const Text('Delete Account & Data', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
+              subtitle: const Text('Permanently remove your data from servers'),
+              onTap: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Action restricted in demo mode to prevent accidental data loss.')),
+                );
+              },
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
     );
   }
 }

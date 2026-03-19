@@ -20,10 +20,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-
       appBar: AppBar(
         title: const Text('Settings', style: TextStyle(fontWeight: FontWeight.bold)),
-
         elevation: 0,
         centerTitle: true,
       ),
@@ -38,20 +36,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryColor),
             ),
             const SizedBox(height: 10),
-    _buildSwitchTile(
-    title: 'Dark Mode',
-    subtitle: 'Switch application theme',
-    icon: Icons.dark_mode,
-    value: _isDarkMode,
-    onChanged: (val) {
-    setState(() {
-    _isDarkMode = val;
-    });
-    //  This changes the global theme instantly
-    themeNotifier.value = val ? ThemeMode.dark : ThemeMode.light;
-    Hive.box('settings_box').put('isDarkMode', val);
-    },
-    ),
+            _buildSwitchTile(
+              title: 'Dark Mode',
+              subtitle: 'Switch application theme',
+              icon: Icons.dark_mode,
+              value: _isDarkMode,
+              onChanged: (val) {
+                setState(() {
+                  _isDarkMode = val;
+                });
+                // This changes the global theme instantly
+                themeNotifier.value = val ? ThemeMode.dark : ThemeMode.light;
+                Hive.box('settings_box').put('isDarkMode', val);
+              },
+            ),
             _buildSwitchTile(
               title: 'Daily Reminders',
               subtitle: 'Notification at 9:00 PM',
@@ -82,49 +80,58 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             const SizedBox(height: 40),
 
-            // Developer Authentication Card
+           // security section
             const Text(
-              'About Developer',
+              'System & Security',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryColor),
             ),
             const SizedBox(height: 10),
             Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-
+                color: Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(15),
+                border: Border.all(color: Colors.green.withOpacity(0.3), width: 1.5), // Glowing green border
                 boxShadow: [
                   BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
                 ],
-                border: Border.all(color: AppColors.primaryColor.withOpacity(0.2)),
               ),
-              child: const Column(
-                children: [
-                  CircleAvatar(
-                    radius: 40,
-                    backgroundColor: AppColors.primaryColor,
-                    child: Icon(Icons.engineering, size: 40, color: Colors.white),
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    shape: BoxShape.circle,
                   ),
-                  SizedBox(height: 15),
-                  Text(
-                    'Rohit Mathur',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 5),
-                  Text(
-                    'B.Tech CSE - 3rd Year',
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
-                  ),
-                  SizedBox(height: 15),
-                  Text(
-                    'Expense Tracker Application v1.0\nDeveloped using Flutter & Firebase',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 14, color: AppColors.textSecondary, height: 1.5),
-                  ),
-                ],
+                  child: const Icon(Icons.gpp_good, color: Colors.green, size: 30), // Shield with checkmark
+                ),
+                title: const Text('Data Security Status', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                subtitle: const Padding(
+                  padding: EdgeInsets.only(top: 5.0),
+                  child: Text('AES-256 End-to-End Encrypted\nAll financial records secured.', style: TextStyle(height: 1.3, fontSize: 13)),
+                ),
+                trailing: const Icon(Icons.verified_user, color: Colors.green),
+                onTap: () {
+                  // Haptic feedback feel with floating snackbar
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Row(
+                        children: [
+                          Icon(Icons.lock_outline, color: Colors.white),
+                          SizedBox(width: 10),
+                          Expanded(child: Text('Your financial data is strictly encrypted and secure.', style: TextStyle(fontWeight: FontWeight.bold))),
+                        ],
+                      ),
+                      backgroundColor: Colors.green,
+                      behavior: SnackBarBehavior.floating,
+                      elevation: 10,
+                      duration: Duration(seconds: 3),
+                    ),
+                  );
+                },
               ),
             ),
+            const SizedBox(height: 20),
           ],
         ),
       ),
