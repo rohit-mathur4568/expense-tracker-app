@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../utils/app_colors.dart';
 import '../utils/pdf_helper.dart';
@@ -17,22 +18,24 @@ class _StatsScreenState extends State<StatsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Implementing DefaultTabController to provide a multi-view analytics dashboard
+    final currentUser = FirebaseAuth.instance.currentUser;
+
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-
         appBar: AppBar(
           title: const Text('Analytics Dashboard', style: TextStyle(fontWeight: FontWeight.bold)),
-
           elevation: 0,
           centerTitle: true,
           actions: [
             IconButton(
               icon: const Icon(Icons.picture_as_pdf, color: AppColors.primaryColor),
               onPressed: () async {
-                // Fetch the latest transactions directly from Firebase
-                final snapshot = await FirebaseFirestore.instance.collection('expenses').get();
+                final snapshot = await FirebaseFirestore.instance
+                    .collection('expenses')
+                    .where('userId', isEqualTo: currentUser?.uid)
+                    .get();
+
                 final expensesList = snapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
 
                 double calculatedIncome = 0;
@@ -62,8 +65,12 @@ class _StatsScreenState extends State<StatsScreen> {
             ],
           ),
         ),
+
         body: StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance.collection('expenses').snapshots(),
+          stream: FirebaseFirestore.instance
+              .collection('expenses')
+              .where('userId', isEqualTo: currentUser?.uid)
+              .snapshots(),
           builder: (context, snapshot) {
 
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -100,11 +107,8 @@ class _StatsScreenState extends State<StatsScreen> {
 
             return TabBarView(
               children: [
-                // Tab 1: Interactive Overview View
-                _buildOverviewTab(totalIncome, totalExpense),
-
-                // Tab 2: Detailed Insights View
-                _buildInsightsTab(totalIncome, totalExpense, totalTransactions),
+                _buildOverviewTab(context, totalIncome, totalExpense),
+                _buildInsightsTab(context, totalIncome, totalExpense, totalTransactions),
               ],
             );
           },
@@ -114,13 +118,12 @@ class _StatsScreenState extends State<StatsScreen> {
   }
 
   // Constructs the primary interactive pie chart layout
-  Widget _buildOverviewTab(double income, double expense) {
+  Widget _buildOverviewTab(BuildContext context, double income, double expense) {
     return Padding(
       padding: const EdgeInsets.all(20.0),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Interactive Pie Chart Container
           SizedBox(
             height: 300,
             child: PieChart(
@@ -147,12 +150,11 @@ class _StatsScreenState extends State<StatsScreen> {
           ),
           const SizedBox(height: 40),
 
-          // Custom Legend UI
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildLegendCard('Total Income', income, Colors.green),
-              _buildLegendCard('Total Expense', expense, Colors.redAccent),
+              _buildLegendCard(context, 'Total Income', income, Colors.green),
+              _buildLegendCard(context, 'Total Expense', expense, Colors.redAccent),
             ],
           ),
         ],
@@ -160,12 +162,10 @@ class _StatsScreenState extends State<StatsScreen> {
     );
   }
 
-  // Generates sections with dynamic radius based on user touch interaction
   List<PieChartSectionData> _generateInteractiveSections(double income, double expense) {
     final isIncomeTouched = _touchedIndex == 0;
     final isExpenseTouched = _touchedIndex == 1;
 
-    // Prevent rendering errors if exact zero by providing minimal baseline
     final safeIncome = income > 0 ? income : 0.1;
     final safeExpense = expense > 0 ? expense : 0.1;
 
@@ -197,12 +197,11 @@ class _StatsScreenState extends State<StatsScreen> {
     ];
   }
 
-  // Constructs individual legend indicator cards
-  Widget _buildLegendCard(String title, double amount, Color color) {
+  Widget _buildLegendCard(BuildContext context, String title, double amount, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
       decoration: BoxDecoration(
-
+        color: Theme.of(context).cardColor, // 🔥 CHANGE 5: Card color add kiya for Dark mode
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
@@ -222,8 +221,7 @@ class _StatsScreenState extends State<StatsScreen> {
     );
   }
 
-  // Constructs the secondary insights layout displaying aggregated metrics
-  Widget _buildInsightsTab(double income, double expense, int totalTransactions) {
+  Widget _buildInsightsTab(BuildContext context, double income, double expense, int totalTransactions) {
     final double netSavings = income - expense;
     final double savingsPercentage = income > 0 ? (netSavings / income) * 100 : 0;
 
@@ -235,6 +233,7 @@ class _StatsScreenState extends State<StatsScreen> {
           const Text('Financial Health Summary', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
           const SizedBox(height: 20),
           _buildInsightTile(
+            context,
             Icons.account_balance,
             'Net Savings',
             '₹${netSavings.toStringAsFixed(2)}',
@@ -242,6 +241,7 @@ class _StatsScreenState extends State<StatsScreen> {
           ),
           const SizedBox(height: 15),
           _buildInsightTile(
+            context,
             Icons.percent,
             'Savings Ratio',
             '${savingsPercentage.toStringAsFixed(1)}% of Income',
@@ -249,6 +249,7 @@ class _StatsScreenState extends State<StatsScreen> {
           ),
           const SizedBox(height: 15),
           _buildInsightTile(
+            context,
             Icons.receipt_long,
             'Total Transactions',
             totalTransactions.toString(),
@@ -259,12 +260,11 @@ class _StatsScreenState extends State<StatsScreen> {
     );
   }
 
-  // Helper widget to construct insight data rows
-  Widget _buildInsightTile(IconData icon, String title, String value, Color iconColor) {
+  Widget _buildInsightTile(BuildContext context, IconData icon, String title, String value, Color iconColor) {
     return Container(
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-
+        color: Theme.of(context).cardColor, // 🔥 CHANGE 6: Card color add kiya
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2)),
