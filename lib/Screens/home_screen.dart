@@ -189,7 +189,7 @@ class HomeScreen extends StatelessWidget {
                             );
                           },
 
-                          child: _buildTransactionCard(
+                           child: _buildTransactionCard(
                               context,
                               title,
                               category,
