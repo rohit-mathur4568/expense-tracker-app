@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../utils/app_colors.dart';
 import '../utils/pdf_helper.dart';
+import '../utils/notification_helper.dart';
 import '../main.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -16,7 +17,8 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   // Local state variables to make the UI switches interactive
   bool _isDarkMode = Hive.box('settings_box').get('isDarkMode', defaultValue: false);
-  bool _isReminderOn = true;
+
+  bool _isReminderOn = Hive.box('settings_box').get('isReminderOn', defaultValue: true);
 
   @override
   Widget build(BuildContext context) {
@@ -56,10 +58,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
               subtitle: 'Notification at 9:00 PM',
               icon: Icons.notifications_active,
               value: _isReminderOn,
-              onChanged: (val) {
+              onChanged: (val) async {
                 setState(() {
                   _isReminderOn = val;
                 });
+
+                //save user permission
+                await Hive.box('settings_box').put('isReminderOn', val);
+
+                // Notification On/Off
+                if (val) {
+                  await NotificationHelper.scheduleDailyReminder();
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Daily reminder turned ON 🔔'), backgroundColor: Colors.green),
+                    );
+                  }
+                } else {
+                  await NotificationHelper.cancelDailyReminder();
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Daily reminder turned OFF 🔕'), backgroundColor: Colors.grey),
+                    );
+                  }
+                }
               },
             ),
 
@@ -81,7 +103,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             const SizedBox(height: 40),
 
-           // security section
+            // security section
             const Text(
               'System & Security',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryColor),
@@ -167,7 +189,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           .collection('expenses')
           .where('userId', isEqualTo: user?.uid)
           .orderBy('date', descending: true)
-          .get();      final expensesList = snapshot.docs.map((doc) => doc.data()).toList();
+          .get();
+
+      final expensesList = snapshot.docs.map((doc) => doc.data()).toList();
 
       double calculatedIncome = 0;
       double calculatedExpense = 0;
