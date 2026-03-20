@@ -67,7 +67,7 @@ class _AddExpenseState extends State<AddExpense> {
         children: [
           Center(
             child: Text(
-              isEditing ? 'Edit Transaction' : 'Add Transaction', // Dynamic Title
+              isEditing ? 'Edit Transaction' : 'Add Transaction',
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
           ),
@@ -127,7 +127,7 @@ class _AddExpenseState extends State<AddExpense> {
             keyboardType: TextInputType.number,
             style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
             decoration: InputDecoration(
-              labelText: 'Amount (₹)',
+              labelText: 'Amount (INR)',
               labelStyle: const TextStyle(color: Colors.grey),
               hintText: '0.00',
               hintStyle: const TextStyle(color: Colors.grey),
@@ -152,7 +152,7 @@ class _AddExpenseState extends State<AddExpense> {
                 // Validation
                 if (enteredTitle.isEmpty || enteredAmount <= 0) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Enter correct title and amount!')),
+                    const SnackBar(content: Text('Please enter a valid title and amount.')),
                   );
                   return;
                 }
@@ -160,6 +160,11 @@ class _AddExpenseState extends State<AddExpense> {
                 // Save or Update in database
                 try {
                   final user = FirebaseAuth.instance.currentUser;
+                  final now = DateTime.now();
+
+                  // Extracting clean date and time formats
+                  final formattedDate = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+                  final formattedTime = "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
 
                   if (isEditing) {
                     // Update existing document
@@ -167,24 +172,25 @@ class _AddExpenseState extends State<AddExpense> {
                       'title': enteredTitle,
                       'amount': enteredAmount,
                       'category': _transactionType,
-                      // Note: We don't update the date so it stays in its original chronological order
+                      // We intentionally do not update the date/time here to preserve the original log time
                     });
-                    print("Data updated in Firebase ! 👍");
                   } else {
-                    // Add new document
+                    // Add new document with explicit date and time fields
                     await FirebaseFirestore.instance.collection('expenses').add({
                       'title' : enteredTitle,
                       'amount' : enteredAmount,
-                      'date' : DateTime.now().toIso8601String(),
                       'category' : _transactionType,
                       'userId' : user?.uid,
+                      'date' : now.toIso8601String(), // Maintained for backward compatibility
+                      'displayDate' : formattedDate, // New explicit date field
+                      'displayTime' : formattedTime, // New explicit time field
+                      'timestamp' : FieldValue.serverTimestamp(), // Exact server time for precise sorting
                     });
-                    print("Data added to Firebase ! 👍");
                   }
 
                   if (context.mounted) Navigator.pop(context);
                 } catch (error) {
-                  print("Error in Cloud : $error");
+                  debugPrint("Error saving to Firebase: $error");
                 }
               },
               style: ElevatedButton.styleFrom(
@@ -192,7 +198,7 @@ class _AddExpenseState extends State<AddExpense> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
               ),
               child: Text(
-                isEditing ? 'Update Transaction' : 'Save', // Dynamic Button Text
+                isEditing ? 'Update Transaction' : 'Save',
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
               ),
             ),

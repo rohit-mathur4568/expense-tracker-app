@@ -13,13 +13,19 @@ class PdfReportGenerator {
     final pdf = pw.Document();
     final double netBalance = totalIncome - totalExpense;
 
+    // Fetch the current date and time for the document header and filename
+    final now = DateTime.now();
+    final String formattedDate = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+    final String formattedTime = "${now.hour.toString().padLeft(2, '0')}-${now.minute.toString().padLeft(2, '0')}-${now.second.toString().padLeft(2, '0')}";
+    final String dynamicFileName = 'Expense_Report_${formattedDate}_$formattedTime.pdf';
+
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(32),
         build: (pw.Context context) {
           return [
-            _buildHeader(),
+            _buildHeader(formattedDate, formattedTime),
             pw.SizedBox(height: 20),
             _buildFinancialSummary(totalIncome, totalExpense, netBalance),
             pw.SizedBox(height: 30),
@@ -32,18 +38,26 @@ class PdfReportGenerator {
     // This triggers the native printing/sharing dialog on the device
     await Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async => pdf.save(),
-      name: 'Expense_Report.pdf',
+      name: dynamicFileName,
     );
   }
 
   // Helper method to construct the document header
-  static pw.Widget _buildHeader() {
+  static pw.Widget _buildHeader(String date, String time) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
         pw.Text('Personal Expense Tracker', style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
-        pw.SizedBox(height: 5),
-        pw.Text('Monthly Financial Report', style: const pw.TextStyle(fontSize: 16, color: PdfColors.grey700)),
+        pw.SizedBox(height: 8),
+        pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text('Financial Report', style: const pw.TextStyle(fontSize: 16, color: PdfColors.grey700)),
+              // Displaying the generation timestamp inside the PDF header
+              pw.Text('Generated: $date at ${time.replaceAll('-', ':')}', style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey600)),
+            ]
+        ),
+        pw.SizedBox(height: 10),
         pw.Divider(thickness: 2),
       ],
     );
@@ -73,22 +87,40 @@ class PdfReportGenerator {
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
         pw.Text(title, style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey600)),
+        pw.SizedBox(height: 4),
         pw.Text('INR ${amount.toStringAsFixed(2)}', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: color)),
       ],
     );
   }
 
-  // Helper method to generate the data table
+  // Helper method to generate the data table with date and time
   static pw.Widget _buildExpenseTable(List<Map<String, dynamic>> expenses) {
-    // Defining table headers
-    final headers = ['Transaction Title', 'Category', 'Amount (INR)'];
+    // Defining table headers with the new Date & Time column
+    final headers = ['Transaction Title', 'Category', 'Date & Time', 'Amount (INR)'];
 
     // Mapping raw data to table rows
     final data = expenses.map((expense) {
-      final title = expense['title'].toString();
-      final category = expense['category'].toString();
-      final amount = expense['amount'].toString();
-      return [title, category, amount];
+      final title = expense['title']?.toString() ?? 'Unknown';
+      final category = expense['category']?.toString() ?? 'Unknown';
+      final amount = expense['amount']?.toString() ?? '0';
+
+      String dateTimeStr = 'Unknown';
+
+      // Safely extracting the date and time from the new explicitly saved fields
+      if (expense.containsKey('displayDate') && expense.containsKey('displayTime')) {
+        dateTimeStr = '${expense['displayDate']} ${expense['displayTime']}';
+      }
+      // Fallback logic for older transactions that only have the long ISO string
+      else if (expense.containsKey('date')) {
+        final rawDate = expense['date'].toString();
+        if (rawDate.length >= 16) {
+          dateTimeStr = rawDate.substring(0, 16).replaceFirst('T', ' ');
+        } else {
+          dateTimeStr = rawDate;
+        }
+      }
+
+      return [title, category, dateTimeStr, amount];
     }).toList();
 
     return pw.TableHelper.fromTextArray(
@@ -101,7 +133,8 @@ class PdfReportGenerator {
       cellAlignments: {
         0: pw.Alignment.centerLeft,
         1: pw.Alignment.center,
-        2: pw.Alignment.centerRight,
+        2: pw.Alignment.center, // Center alignment for the Date & Time column
+        3: pw.Alignment.centerRight,
       },
     );
   }
