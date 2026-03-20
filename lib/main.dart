@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; //  Added Firestore Import
 import 'package:hive_flutter/hive_flutter.dart';
 
 import 'firebase_options.dart';
@@ -22,6 +23,12 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
+  // FIREBASE OFFLINE PERSISTENCE (To run the app without internet)
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: true, // Grants permission to save data offline
+    cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED, // Unlimited cache space on the device
+  );
+
   // Initialize Hive local database for offline storage
   await Hive.initFlutter();
 
@@ -31,7 +38,7 @@ void main() async {
   // Open a box named 'expenses_box' to store all data locally
   await Hive.openBox<Expense>('expenses_box');
 
-  // 🔥 NEW: Open Settings Box & Load Saved Theme
+  // Open Settings Box & Load Saved Theme
   await Hive.openBox('settings_box');
   bool isDark = Hive.box('settings_box').get('isDarkMode', defaultValue: false);
   themeNotifier.value = isDark ? ThemeMode.dark : ThemeMode.light;
