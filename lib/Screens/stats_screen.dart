@@ -13,7 +13,6 @@ class StatsScreen extends StatefulWidget {
 }
 
 class _StatsScreenState extends State<StatsScreen> {
-  // State variable to track user interaction with the pie chart
   int _touchedIndex = -1;
 
   @override
@@ -50,7 +49,6 @@ class _StatsScreenState extends State<StatsScreen> {
                   }
                 }
 
-                // Trigger the PDF generation process
                 await PdfReportGenerator.generateAndPrintReport(expensesList, calculatedIncome, calculatedExpense);
               },
             ),
@@ -91,9 +89,7 @@ class _StatsScreenState extends State<StatsScreen> {
 
             double totalIncome = 0;
             double totalExpense = 0;
-            int totalTransactions = expenses.length;
 
-            // Data aggregation logic
             for (var doc in expenses) {
               final data = doc.data() as Map<String, dynamic>;
               final amount = (data['amount'] ?? 0).toDouble();
@@ -108,7 +104,8 @@ class _StatsScreenState extends State<StatsScreen> {
             return TabBarView(
               children: [
                 _buildOverviewTab(context, totalIncome, totalExpense),
-                _buildInsightsTab(context, totalIncome, totalExpense, totalTransactions),
+                // Passing the raw expenses list to the Insights tab for the bottom sheet
+                _buildInsightsTab(context, totalIncome, totalExpense, expenses),
               ],
             );
           },
@@ -117,7 +114,6 @@ class _StatsScreenState extends State<StatsScreen> {
     );
   }
 
-  // Constructs the primary interactive pie chart layout
   Widget _buildOverviewTab(BuildContext context, double income, double expense) {
     return Padding(
       padding: const EdgeInsets.all(20.0),
@@ -201,7 +197,7 @@ class _StatsScreenState extends State<StatsScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor, // 🔥 CHANGE 5: Card color add kiya for Dark mode
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
@@ -221,7 +217,8 @@ class _StatsScreenState extends State<StatsScreen> {
     );
   }
 
-  Widget _buildInsightsTab(BuildContext context, double income, double expense, int totalTransactions) {
+  // Updated to accept the full list of expenses
+  Widget _buildInsightsTab(BuildContext context, double income, double expense, List<QueryDocumentSnapshot> allExpenses) {
     final double netSavings = income - expense;
     final double savingsPercentage = income > 0 ? (netSavings / income) * 100 : 0;
 
@@ -238,6 +235,14 @@ class _StatsScreenState extends State<StatsScreen> {
             'Net Savings',
             '₹${netSavings.toStringAsFixed(2)}',
             netSavings >= 0 ? Colors.green : Colors.red,
+            onTap: () {
+              // Filters only Income transactions when clicking Net Savings
+              final savingsList = allExpenses.where((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                return data['category'] == 'Income';
+              }).toList();
+              _showTransactionBottomSheet(context, 'Income History', savingsList);
+            },
           ),
           const SizedBox(height: 15),
           _buildInsightTile(
@@ -252,41 +257,128 @@ class _StatsScreenState extends State<StatsScreen> {
             context,
             Icons.receipt_long,
             'Total Transactions',
-            totalTransactions.toString(),
+            allExpenses.length.toString(),
             Colors.purpleAccent,
+            onTap: () {
+              // Shows all transactions
+              _showTransactionBottomSheet(context, 'All Transactions', allExpenses);
+            },
           ),
         ],
       ),
     );
   }
 
-  Widget _buildInsightTile(BuildContext context, IconData icon, String title, String value, Color iconColor) {
-    return Container(
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor, // 🔥 CHANGE 6: Card color add kiya
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2)),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
+  Widget _buildInsightTile(BuildContext context, IconData icon, String title, String value, Color iconColor, {VoidCallback? onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(15),
+      child: Container(
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2)),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: iconColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: iconColor, size: 28),
             ),
-            child: Icon(icon, color: iconColor, size: 28),
-          ),
-          const SizedBox(width: 15),
-          Expanded(
-            child: Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-          ),
-          Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        ],
+            const SizedBox(width: 15),
+            Expanded(
+              child: Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+            ),
+            Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            if (onTap != null) ...[
+              const SizedBox(width: 10),
+              const Icon(Icons.chevron_right, color: Colors.grey),
+            ]
+          ],
+        ),
       ),
+    );
+  }
+
+  // Reusable function to display the bottom sheet with a list of transactions
+  void _showTransactionBottomSheet(BuildContext context, String title, List<QueryDocumentSnapshot> dataList) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              const Divider(),
+              const SizedBox(height: 10),
+              Expanded(
+                child: dataList.isEmpty
+                    ? const Center(child: Text('No transactions found.', style: TextStyle(color: Colors.grey)))
+                    : ListView.builder(
+                  itemCount: dataList.length,
+                  itemBuilder: (context, index) {
+                    final data = dataList[index].data() as Map<String, dynamic>;
+                    final amount = data['amount'] ?? 0;
+                    final isIncome = data['category'] == 'Income';
+                    final itemTitle = data['title'] ?? 'Transaction';
+
+                    // Safely parse the date regardless of how it is stored in Firebase
+                    String dateStr = 'Unknown Date';
+                    if (data['date'] != null) {
+                      if (data['date'] is Timestamp) {
+                        dateStr = (data['date'] as Timestamp).toDate().toString().split(' ')[0];
+                      } else {
+                        dateStr = data['date'].toString().split(' ')[0];
+                      }
+                    }
+
+                    return Card(
+                      elevation: 0,
+                      color: Theme.of(context).cardColor,
+                      margin: const EdgeInsets.only(bottom: 10),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: isIncome ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                          child: Icon(
+                            isIncome ? Icons.arrow_downward : Icons.arrow_upward,
+                            color: isIncome ? Colors.green : Colors.red,
+                          ),
+                        ),
+                        title: Text(itemTitle, style: const TextStyle(fontWeight: FontWeight.w500)),
+                        subtitle: Text(dateStr, style: const TextStyle(fontSize: 12)),
+                        trailing: Text(
+                          '₹$amount',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: isIncome ? Colors.green : Colors.red,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
